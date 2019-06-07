@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace tictactoe_console {
-    class History {
+namespace tictactoe {
+    public class History {
         private List<Move> keeper = new List<Move>();
 
         public void Reset () {

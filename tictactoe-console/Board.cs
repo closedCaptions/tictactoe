@@ -4,7 +4,7 @@ using System.Text;
 using tictactoe.Utility;
 
 namespace tictactoe {
-    class Board {
+    public class Board {
         private State[,] arrRef;
 
         public State this[int y, int x] {
@@ -16,18 +16,32 @@ namespace tictactoe {
             }
         }
 
+        public Board (int height, int width)
+            :this(height, width, State.Blank) { }
+
         public Board (int height, int width, State populateState) {
             arrRef = new State[height, width];
-            arrRef.Populate(State.Blank);
+            arrRef.Populate(populateState);
         }
 
         public void Display () {
             for (int y = 0; y < arrRef.GetLength(0); ++y) {
+                if (y != 0)
+                    Console.WriteLine("--- --- ---");
                 for (int x = 0; x < arrRef.GetLength(1); ++x) {
                     if (x != 0)
-                        Console.Write(" | ");
+                        Console.Write("|");
 
-                    string writeString = arrRef[y, x] == State.Blank ? " " : arrRef[y, x].ToString();
+                    string writeString = "   ";
+                    switch (arrRef[y, x]) {
+                        case State.O:
+                            writeString = " O ";
+                            break;
+                        case State.X:
+                            writeString = " X ";
+                            break;
+                    }
+
                     Console.Write(writeString);
                 }
                 Console.Write("\n");
