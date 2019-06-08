@@ -1,45 +1,60 @@
-﻿namespace tictactoe {
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using System.Numerics;
+
+namespace tictactoe {
     public class Game {
 
         #region Variable
 
-        private Board board;
-        public Move latestMove { get; private set; } = new Move (-1, -1);
-        public int cellsInRow;
-        public int maxDepth;
-
-        #region Indexer
-
-        public State this[int y, int x] {
+        #region 2D Array - `board`
+        private readonly State[,] board;
+        public State this[int y, int x] { // Declare indexer
             get {
                 return board[y, x];
             }
             set {
-                latestMove = new Move(y, x);
+                latestMove = new Vector2(x, y);
                 board[y, x] = value;
             }
         }
 
-        public State this[Move move] {
+        public State this[Vector2 index] { // Declare indexer
             get {
-                return board[move.y, move.x];
+                return this[(int)index.Y, (int)index.X];
             }
             set {
-                latestMove = move;
-                board[move.y, move.x] = value;
+                this[(int) index.Y, (int) index.X] = value;
             }
         }
 
+        public int GetLength (int dimension) {
+            return board.GetLength(dimension);
+        }
         #endregion
+
+        private int maxDepth;
+        private Vector2 latestMove;
+
+        public bool Finished {
+            get {
+                return GetAvailSlots().Count == 0 || Winning(State.O) || Winning(State.X);
+            }
+        }
+        public int nLength;
 
         #endregion
 
         #region Constructor
 
-        public Game (int height, int length, int cellsInRow, int maxDepth, State state) {
+        public Game (int n, int maxDepth) {
+            board = new State[n, n];
+            board.Populate(State.Blank);
+
+            nLength = n;
             this.maxDepth = maxDepth;
-            this.cellsInRow = cellsInRow;
-            board = new Board(height, length, state);
         }
 
         #endregion
@@ -47,106 +62,132 @@
         #region Method
 
         public void Display () {
-            board.Display();
+            for (int y = 0; y < this.GetLength(0); y++) {
+                if (y != 0)
+                    Console.Write("--- --- ---\n");
+                for (int x = 0; x < this.GetLength(1); x++) {
+                    string toWrite = " ";
+                    switch (this[y, x]) {
+                        case State.O:
+                            toWrite = "O";
+                            break;
+                        case State.X:
+                            toWrite = "X";
+                            break;
+                    }
+                    Console.Write(" {0} ", toWrite);
+                    if (x != this.GetLength(1) - 1)
+                        Console.Write(" ");
+                }
+                Console.Write("\n");
+            }
         }
 
         #region Minimax
 
-        /* PESUDOCODE - SEBASTIAN LAGUE
-         * 
-         * function minimax(position, depth, maximizingPlayer)
-         *        if depth == 0 or game over in position
-         *            return static evaluation of position
-         *
-         *        if maximizingPlayer
-         *            maxEval = -infinity
-         *            for each child of position
-         *                eval = minimax(child, depth - 1, false)
-         *                maxEval = max(maxEval, eval)
-         *            return maxEval
-         *
-         *        else
-         *            minEval = +infinity
-         *            for each child of position
-         *                eval = minimax(child, depth - 1, true)
-         *                minEval = min(minEval, eval)
-         *            return minEval
-         *
-         *
-         *  // initial call
-         *  minimax(currentPosition, 3, true)
-         * 
-         */
-        // Bot is maximizing = O
-        public int Minimax (Game game, int depth, bool maximizing) {
-            game.latestMove = this.latestMove;  // At first round will be setting the same
+        public Vector3 Minimax (bool maximizing) {
+            return Minimax(this, maxDepth, maximizing, GetAvailSlots());
+        }
 
-            if (Winning(State.O)) {
-                return maxDepth - (maxDepth - depth);
+        private Vector3 Minimax (Game game, int depth, bool maximizing, List<Vector2> availSlots) {
+            /**
+             * x = x index
+             * y = y index
+             * z = score
+             */
+
+            if (game.GetScore(depth) != 0 || availSlots.Count == 0)
+                return new Vector3(-1, -1, GetScore(depth));
+
+            List<Vector3> moveNodes = new List<Vector3>();
+            // Find pausible moves
+            foreach (Vector2 slot in availSlots) {
+                Vector2[] tmp = new Vector2[availSlots.Count];
+                availSlots.CopyTo(tmp);
+                List<Vector2> copy = tmp.ToList();
+                copy.Remove(slot);
+                game[slot] = (maximizing ? State.O : State.X);
+
+                moveNodes.Add(new Vector3(slot, Minimax (game, depth - 1, !maximizing, copy).Z));
+
+                game[slot] = State.Blank; // reset back to blank
+                game.latestMove = this.latestMove;
             }
 
-            return 0;
-        }
-
-        private bool Winning (State state) {
-            // Uses latest move instead of checking each cell for performance
-            return WinDiagonal(latestMove, state) || WinVertical(latestMove, state) || WinHorizontal(latestMove, state);
-        }
-
-        private bool WinDiagonal (Move latestMove, State state) {
-            int trueCount = 0;
-            for (int i = -3; i < 4; i++) {
-                if (trueCount == cellsInRow)
-                    return true;
-
-                try {   // Catch `IndexOutOfRangeException`
-                    if (this[latestMove.y + i, latestMove.x + i] == state)
-                        trueCount++;
-                    else
-                        trueCount = 0;
-                }
-                catch {
-                    continue;
-                }
+            // Actual minimax
+            if (maximizing) { // Bot is playing
+                return moveNodes.AsEnumerable().Aggregate((acc, val) => (val.Z > acc.Z ? val : acc));
+            } else { // Human is playing
+                return moveNodes.AsEnumerable().Aggregate((acc, val) => (val.Z < acc.Z ? val : acc));
             }
-
-            return false;
         }
 
-        private bool WinVertical (Move latestMove, State state) {
-            int trueCount = 0;
-            for (int i = -3; i < 4; i++) {
-                if (trueCount == cellsInRow)
+        #region Helper method
+
+        #region Winning method
+
+        public bool Winning (State state) {
+            return WinCol(state) || WinRow(state) || WinDiag(state) || WinAntiDiag(state);
+        }
+
+        private bool WinCol (State state) {
+            int winSum = 0;
+            for (int i = 0; i < this.nLength; i++) {
+                if (winSum == this.nLength)
                     return true;
 
-                try {   // Catch `IndexOutOfRangeException`
-                    if (this[latestMove.y + i, latestMove.x] == state)
-                        trueCount++;
-                    else
-                        trueCount = 0;
-                }
-                catch {
-                    continue;
+                if (this[i, (int)latestMove.X] != state) {
+                    winSum = 0;
+                }else {
+                    winSum++;
                 }
             }
 
             return false;
         }
 
-        private bool WinHorizontal (Move latestMove, State state) {
-            int trueCount = 0;
-            for (int i = -3; i < 4; i++) {
-                if (trueCount == cellsInRow)
+        private bool WinRow (State state) {
+            int winSum = 0;
+            for (int i = 0; i < this.nLength; i++) {
+                if (winSum == this.nLength)
                     return true;
 
-                try {   // Catch `IndexOutOfRangeException`
-                    if (this[latestMove.y, latestMove.x + i] == state)
-                        trueCount++;
-                    else
-                        trueCount = 0;
+                if (this[(int)latestMove.Y, i] != state) {
+                    winSum = 0;
+                } else {
+                    winSum++;
                 }
-                catch {
-                    continue;
+            }
+
+            return false;
+        }
+
+        private bool WinDiag (State state) {
+            int winSum = 0;
+            for (int i = 0; i < this.nLength; i++) {
+                if (winSum == this.nLength)
+                    return true;
+
+                if (this[i, i] != state) {
+                    winSum = 0;
+                } else {
+                    winSum++;
+                }
+            }
+
+            return false;
+        }
+
+        private bool WinAntiDiag (State state) {
+            int winSum = 0;
+            for (int i = 0; i < this.nLength; i++) {
+                if (winSum == this.nLength)
+                    return true;
+
+                if (this[i, (this.nLength - 1) - i] != state) {
+                    winSum = 0;
+                } else {
+                    winSum++;
                 }
             }
 
@@ -155,6 +196,50 @@
 
         #endregion
 
+        private int GetScore (int depth) {
+            int toSubtract = (maxDepth - depth);
+
+            if (Winning(State.O)) { // Bot wins
+                return int.MaxValue - toSubtract;
+            }else if (Winning(State.X)) { // Human wins
+                return int.MinValue + toSubtract;
+            }else { // Round draw (No available slots) or depth is zero
+                return 0;
+            }
+
+        }
+
+        private List<Vector2> GetAvailSlots () {
+            List<Vector2> dest = new List<Vector2>();
+
+            for (int y = 0; y < this.GetLength(0); y++) {
+                for (int x = 0; x < this.GetLength(1); x++) {
+                    if (this[y, x] == State.Blank)
+                        dest.Add(new Vector2(x, y));
+                }
+            }
+
+            return dest;
+        }
+
         #endregion
+
+        #endregion
+
+        #endregion
+
+    }
+
+    static class Utility {
+
+        public delegate bool ReturnBool <T> (T value);
+
+        public static void Populate<T> (this T[,] array, T populateValue) {
+            for (int y = 0; y < array.GetLength(0); ++y) {
+                for (int x = 0; x < array.GetLength(1); ++x) {
+                    array[y, x] = populateValue;
+                }
+            }
+        }
     }
 }
