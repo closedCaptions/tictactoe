@@ -1,25 +1,52 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Linq;
-
-namespace tictactoe {
+﻿namespace tictactoe {
     public class Game {
 
-        private readonly History history = new History();
-        private Board board = new Board(3, 3, State.X);
+        #region Variable
+
+        private Board board;
+        public Move latestMove { get; private set; } = new Move (-1, -1);
+        public int cellsInRow;
+        public int maxDepth;
+
+        #region Indexer
 
         public State this[int y, int x] {
             get {
                 return board[y, x];
             }
             set {
-                history.Add(new Move(y, x));
+                latestMove = new Move(y, x);
                 board[y, x] = value;
             }
         }
 
-        public void DisplayBoard () {
+        public State this[Move move] {
+            get {
+                return board[move.y, move.x];
+            }
+            set {
+                latestMove = move;
+                board[move.y, move.x] = value;
+            }
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Constructor
+
+        public Game (int height, int length, int cellsInRow, int maxDepth, State state) {
+            this.maxDepth = maxDepth;
+            this.cellsInRow = cellsInRow;
+            board = new Board(height, length, state);
+        }
+
+        #endregion
+
+        #region Method
+
+        public void Display () {
             board.Display();
         }
 
@@ -50,29 +77,79 @@ namespace tictactoe {
          *  minimax(currentPosition, 3, true)
          * 
          */
-
-        // Bot is maximizing
+        // Bot is maximizing = O
         public int Minimax (Game game, int depth, bool maximizing) {
+            game.latestMove = this.latestMove;  // At first round will be setting the same
+
+            if (Winning(State.O)) {
+                return maxDepth - (maxDepth - depth);
+            }
 
             return 0;
         }
 
-        #region Winning
-
-        public bool Winning (Game game) {
-            // Uses latest move
-            return WinDiagonal() || WinVertical() || WinHorizontal();
+        private bool Winning (State state) {
+            // Uses latest move instead of checking each cell for performance
+            return WinDiagonal(latestMove, state) || WinVertical(latestMove, state) || WinHorizontal(latestMove, state);
         }
 
-        public bool WinDiagonal () {
+        private bool WinDiagonal (Move latestMove, State state) {
+            int trueCount = 0;
+            for (int i = -3; i < 4; i++) {
+                if (trueCount == cellsInRow)
+                    return true;
+
+                try {   // Catch `IndexOutOfRangeException`
+                    if (this[latestMove.y + i, latestMove.x + i] == state)
+                        trueCount++;
+                    else
+                        trueCount = 0;
+                }
+                catch {
+                    continue;
+                }
+            }
+
             return false;
         }
 
-        public bool WinVertical () {
+        private bool WinVertical (Move latestMove, State state) {
+            int trueCount = 0;
+            for (int i = -3; i < 4; i++) {
+                if (trueCount == cellsInRow)
+                    return true;
+
+                try {   // Catch `IndexOutOfRangeException`
+                    if (this[latestMove.y + i, latestMove.x] == state)
+                        trueCount++;
+                    else
+                        trueCount = 0;
+                }
+                catch {
+                    continue;
+                }
+            }
+
             return false;
         }
 
-        public bool WinHorizontal () {
+        private bool WinHorizontal (Move latestMove, State state) {
+            int trueCount = 0;
+            for (int i = -3; i < 4; i++) {
+                if (trueCount == cellsInRow)
+                    return true;
+
+                try {   // Catch `IndexOutOfRangeException`
+                    if (this[latestMove.y, latestMove.x + i] == state)
+                        trueCount++;
+                    else
+                        trueCount = 0;
+                }
+                catch {
+                    continue;
+                }
+            }
+
             return false;
         }
 

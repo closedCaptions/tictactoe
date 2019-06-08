@@ -8,8 +8,8 @@ namespace tictactoe {
     public class Program {
 
         static void Main (string[] args) {
-            Game game = new Game();
-            game.DisplayBoard();
+            Game game = new Game(3, 3, 3, 20, State.Blank);
+            game.Display();
         }
     }
 }

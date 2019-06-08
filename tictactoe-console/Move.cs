@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace tictactoe {
-    public class Move {
+    public struct Move {
         public int x { get; }
         public int y { get; }
 

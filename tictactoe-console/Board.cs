@@ -5,6 +5,8 @@ using tictactoe.Utility;
 
 namespace tictactoe {
     public class Board {
+        #region Variable
+
         private State[,] arrRef;
 
         public State this[int y, int x] {
@@ -16,14 +18,21 @@ namespace tictactoe {
             }
         }
 
+        #endregion
+
+        #region Constructor
+
         public Board (int height, int width)
-            :this(height, width, State.Blank) { }
+            : this(height, width, State.Blank) { }
 
         public Board (int height, int width, State populateState) {
             arrRef = new State[height, width];
             arrRef.Populate(populateState);
         }
 
+        #endregion
+
+        #region Method
         public void Display () {
             for (int y = 0; y < arrRef.GetLength(0); ++y) {
                 if (y != 0)
@@ -47,5 +56,6 @@ namespace tictactoe {
                 Console.Write("\n");
             }
         }
+        #endregion
     }
 }
