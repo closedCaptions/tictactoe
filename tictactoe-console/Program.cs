@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Linq;
 using System.Numerics;
-using System.Threading;
 
 public enum State { Blank, X, O }
+
 /**
  * NOTE:
  * X is minimizer
@@ -13,24 +10,17 @@ public enum State { Blank, X, O }
  */
 
 namespace tictactoe {
-    class Program {
 
-        private static Game game = new Game(3, int.MaxValue);
+    internal class Program {
 
         private static void Main (string[] args) {
-            Thread gameLoop = new Thread(new ThreadStart(ThreadUpdate));
+            Game game = new Game(3, int.MaxValue);
+            game.Introduce();
             game.Display();
-            gameLoop.Start();
-        }
 
-        private static void ThreadUpdate () {
-            while (true) {
-                int X = Utility.AskInput("\nInput X value:", "Try again, integer only\n") - 1;
-                int Y = Utility.AskInput("\nInput Y value:", "Try again, integer only\n") - 1;
-                if (game[Y, X] != State.Blank) {
-                    // TODO: Add stuff here that will ask again if player is out of bounds
-                }
-                game[Y, X] = State.X;
+            while (!game.Finished) {
+                Vector2 gameCoords = GameInput(game, (x) => x - 1);
+                game[(int) gameCoords.Y, (int) gameCoords.X] = State.X;
                 Console.Clear();
                 game.Display();
 
@@ -45,12 +35,29 @@ namespace tictactoe {
                     break;
             }
 
-            if (game.Winning(State.X)) // Report win for X
+            if (game.Winning(State.X)) { // Report win for X
                 Console.WriteLine("X wins!");
-            else if (game.Winning(State.O)) // Report win for O
+            } else if (game.Winning(State.O)) { // Report win for O
                 Console.WriteLine("O wins!");
-            else // Report draw
+            } else { // Report draw
                 Console.WriteLine("Draw!");
+            }
+
+            Console.WriteLine("Press any key to close the application");
+            Console.ReadKey();
+        }
+
+        // Exclusive to the game input in Program.cs : 23
+        private static Vector2 GameInput (Game game, IntOperation operation) {
+            int X = "Input X value:".AskInput(game.nLength, operation);
+            int Y = "Input Y value:".AskInput(game.nLength, operation);
+
+            if (game[Y, X] != State.Blank) {
+                Console.WriteLine("\nThat slot is already filled\n");
+                return GameInput(game, operation);
+            } else {
+                return new Vector2(X, Y);
+            }
         }
     }
 }

@@ -6,4 +6,10 @@
     <RootNamespace>tictactoe</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="ILMerge" Version="3.0.29" />
+    <PackageReference Include="ILMerge.Tools" Version="2.14.1208" />
+    <PackageReference Include="Microsoft.Packaging.Tools.Trimming" Version="1.1.0-preview1-25818-01" />
+  </ItemGroup>
+
 </Project>

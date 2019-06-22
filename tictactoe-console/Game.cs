@@ -5,15 +5,17 @@ using System.Numerics;
 
 namespace tictactoe {
 
-    class Game {
+    public delegate int IntOperation (int value);
 
-        #region Variable
+    internal class Game {
 
-        #region 2D Array - `board`
+        #region Variables
 
         private readonly State[,] board;
 
-        public State this[int y, int x] { // Declare indexer
+        #region Board indexer
+
+        public State this[int y, int x] {
             get {
                 return board[y, x];
             }
@@ -41,11 +43,7 @@ namespace tictactoe {
             }
         }
 
-        public int GetLength (int dimension) {
-            return board.GetLength(dimension);
-        }
-
-        #endregion 2D Array - `board`
+        #endregion Board indexer
 
         private int maxDepth;
         private Vector2 latestMove;
@@ -56,9 +54,9 @@ namespace tictactoe {
             }
         }
 
-        public int nLength;
+        public int nLength { get; }
 
-        #endregion Variable
+        #endregion Variables
 
         #region Constructor
 
@@ -72,12 +70,30 @@ namespace tictactoe {
 
         #endregion Constructor
 
-        #region Method
+        #region Basic Methods
+
+        public void Introduce () {
+            string logo = @"████████╗██╗ ██████╗    ████████╗ █████╗  ██████╗    ████████╗ ██████╗ ███████╗" + "\n" +
+                          @"╚══██╔══╝██║██╔════╝    ╚══██╔══╝██╔══██╗██╔════╝    ╚══██╔══╝██╔═══██╗██╔════╝" + "\n" +
+                          @"   ██║   ██║██║            ██║   ███████║██║            ██║   ██║   ██║█████╗" + "\n" +
+                          @"   ██║   ██║██║            ██║   ██╔══██║██║            ██║   ██║   ██║██╔══╝" + "\n" +
+                          @"   ██║   ██║╚██████╗       ██║   ██║  ██║╚██████╗       ██║   ╚██████╔╝███████╗" + "\n" +
+                          @"   ╚═╝   ╚═╝ ╚═════╝       ╚═╝   ╚═╝  ╚═╝ ╚═════╝       ╚═╝    ╚═════╝ ╚══════╝" + "\n";
+            Console.WriteLine(logo);
+            Console.WriteLine("\nPress any key to continue..");
+            Console.ReadKey();
+            Console.Clear();
+        }
 
         public void Display () {
             for (int y = 0; y < this.nLength; y++) {
-                if (y != 0)
-                    Console.WriteLine(string.Join("--- ", new string[this.nLength + 1]));
+                if (y != 0) {
+                    Console.WriteLine("   " + string.Join("--- ", new string[this.nLength + 1]));
+                } else {
+                    Console.WriteLine("    " + string.Join("   ", Enumerable.Range(1, this.nLength)));
+                }
+
+                Console.Write(" {0} ", y + 1);
 
                 for (int x = 0; x < this.nLength; x++) {
                     string toWrite = "  ";
@@ -91,12 +107,14 @@ namespace tictactoe {
                             break;
                     }
                     toWrite += (x != this.nLength - 1 ? "|" : "");
-                    
-                    Console.Write(" {0}", toWrite);
+
+                    Console.Write($" {toWrite}");
                 }
                 Console.WriteLine();
             }
         }
+
+        #endregion Basic Methods
 
         #region Minimax
 
@@ -112,13 +130,6 @@ namespace tictactoe {
         }
 
         private Vector3 Minimax (Game game, int depth, bool maximizing, List<Vector2> availSlots) {
-            /**
-             * NOTE:
-             * x is x index
-             * y is y index
-             * z is score
-             */
-
             if (game.GetScore(depth) != 0 || availSlots.Count == 0)
                 return new Vector3(-1, -1, GetScore(depth));
 
@@ -136,7 +147,7 @@ namespace tictactoe {
                 game[slot] = State.Blank; // Reset back to blank
             }
 
-            // Actual minimax
+            // Actual comparing
             if (maximizing) { // O is playing
                 return moveNodes.AsEnumerable().Aggregate((acc, val) => (val.Z > acc.Z ? val : acc));
             } else { // X is playing
@@ -155,7 +166,7 @@ namespace tictactoe {
         private bool WinCol (State state) {
             for (int i = 0; i < this.nLength; i++) {
                 if (this[i, (int) latestMove.X] != state)
-                    break; // Will stop the i++ operation from happening
+                    break;
 
                 if (i == this.nLength - 1)
                     return true;
@@ -167,7 +178,7 @@ namespace tictactoe {
         private bool WinRow (State state) {
             for (int i = 0; i < this.nLength; i++) {
                 if (this[(int) latestMove.Y, i] != state)
-                    break; // Will stop the i++ operation from happening
+                    break;
 
                 if (i == this.nLength - 1)
                     return true;
@@ -180,7 +191,7 @@ namespace tictactoe {
             if (latestMove.X == latestMove.Y) {
                 for (int i = 0; i < nLength; i++) {
                     if (this[i, i] != state)
-                        break; // Will stop the i++ operation from happening
+                        break;
 
                     if (i == nLength - 1)
                         return true;
@@ -219,8 +230,8 @@ namespace tictactoe {
         public List<Vector2> GetAvailSlots () {
             List<Vector2> dest = new List<Vector2>();
 
-            for (int y = 0; y < this.GetLength(0); y++) {
-                for (int x = 0; x < this.GetLength(1); x++) {
+            for (int y = 0; y < this.nLength; y++) {
+                for (int x = 0; x < this.nLength; x++) {
                     if (this[y, x] == State.Blank)
                         dest.Add(new Vector2(x, y));
                 }
@@ -232,29 +243,5 @@ namespace tictactoe {
         #endregion Helper method
 
         #endregion Minimax
-
-        #endregion Method
-
-    }
-
-    static class Utility {
-        public static void Populate<T> (this T[,] array, T populateValue) {
-            for (int y = 0; y < array.GetLength(0); ++y) {
-                for (int x = 0; x < array.GetLength(1); ++x) {
-                    array[y, x] = populateValue;
-                }
-            }
-        }
-
-        public static int AskInput (this string msg, string failMsg) { // Uses Console.Write()
-            Console.Write(msg);
-            int result;
-            bool successful = int.TryParse(Console.ReadLine(), out result);
-
-            if (!successful)
-                return AskInput(failMsg, failMsg);
-
-            return result;
-        }
     }
 }
